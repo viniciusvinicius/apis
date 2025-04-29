@@ -1,18 +1,21 @@
-# use a imagem oficial Node.js
+# 1) Base
 FROM node:18-alpine
 
+# 2) Ponto de trabalho dentro do container
 WORKDIR /usr/src/app
 
-# instala rclone se precisar mover arquivos grandes (opcional)
-RUN apk add --no-cache rclone
+# 3) Copia apenas package.json para instalar dependências
+#    a partir da sub-pasta youtube-uploader
+COPY youtube-uploader/package.json youtube-uploader/package-lock.json* ./
 
-COPY package.json package-lock.json* ./
+# 4) Instala deps
 RUN npm install --production
 
-COPY index.js ./
-COPY .env ./
+# 5) Copia TODO o código da pasta youtube-uploader para /usr/src/app
+COPY youtube-uploader/ ./
 
-# expõe a porta
+# 6) Expõe porta da API
 EXPOSE 3000
 
+# 7) Comando padrão
 CMD ["node", "index.js"]
