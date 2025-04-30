@@ -15,8 +15,15 @@ app.get('/health', (_req, res) => {
 app.post('/upload', async (req, res) => {
   try {
     const {
-      client_id, client_secret, refresh_token,
-      filePath, title, description, tags, privacyStatus = 'public'
+      client_id,
+      client_secret,
+      refresh_token,
+      filePath,
+      title,
+      description,
+      tags,
+      privacyStatus = 'private',
+      publishAt,            // <— agora suportado
     } = req.body;
 
     if (!client_id || !client_secret || !refresh_token || !filePath || !title) {
@@ -35,11 +42,18 @@ app.post('/upload', async (req, res) => {
 
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
+    // monta o objeto de status, incluindo publishAt se informado
+    const status = { privacyStatus };
+    if (publishAt) {
+      status.publishAt = publishAt;
+    }
+
+    // insere o vídeo
     const result = await youtube.videos.insert({
       part: ['snippet','status'],
       requestBody: {
         snippet: { title, description, tags },
-        status:  { privacyStatus }
+        status
       },
       media: { body: fs.createReadStream(filePath) }
     });
