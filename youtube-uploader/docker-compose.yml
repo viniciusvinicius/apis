@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  youtube-uploader:
+    image: youtube-uploader:latest
+    command: ["node","index.js"]
+    ports:
+      - '3000:3000'
+    volumes:
+      - /tmp:/tmp
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
