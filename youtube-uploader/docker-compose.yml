@@ -5,7 +5,7 @@ services:
     image: youtube-uploader:latest
     command: ["node","index.js"]
     ports:
-      - '3000:3000'
+       - "${PORT}:${PORT}"
     volumes:
       - /tmp:/tmp
     deploy:
