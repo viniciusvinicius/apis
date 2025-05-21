@@ -1,74 +1,80 @@
 require('dotenv').config();
-const express = require('express');
-const fs      = require('fs');
+const express  = require('express');
+const fs       = require('fs');
 const { google } = require('googleapis');
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 
-// rota de health-check
+// ────────── Health-check ──────────
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
 });
 
-// rota principal de upload
+// ────────── Upload de vídeo ───────
 app.post('/upload', async (req, res) => {
   try {
-    const {
-      client_id,
-      client_secret,
-      refresh_token,
-      filePath,
-      title,
-      description,
-      tags,
-      privacyStatus = 'private',
-      publishAt,            // <— agora suportado
-    } = req.body;
+    // 1. Extrai o access-token vindo do n8n
+    const authHeader = req.headers.authorization || '';
+    const accessToken = authHeader.startsWith('Bearer ')
+      ? authHeader.split(' ')[1]
+      : null;
 
-    if (!client_id || !client_secret || !refresh_token || !filePath || !title) {
-      return res.status(400).json({
-        error: 'client_id, client_secret, refresh_token, filePath e title são obrigatórios'
-      });
+    if (!accessToken) {
+      return res.status(401).json({ error: 'Authorization header ausente ou mal-formado' });
     }
 
-    // cria cliente OAuth2 dinâmico
-    const oauth2Client = new google.auth.OAuth2(
-      client_id,
-      client_secret,
-      'urn:ietf:wg:oauth:2.0:oob'
-    );
-    oauth2Client.setCredentials({ refresh_token });
+    // 2. Extrai demais campos do body
+    const {
+      filePath,
+      title,
+      description = '',
+      tags       = [],
+      privacyStatus = 'private',
+      publishAt       // opcional
+    } = req.body;
+
+    if (!filePath || !title) {
+      return res.status(400).json({ error: 'filePath e title são obrigatórios' });
+    }
+
+    // 3. Cria cliente OAuth2 apenas com o access-token
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
 
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-    // monta o objeto de status, incluindo publishAt se informado
+    // 4. Monta status (inclui publishAt se veio)
     const status = { privacyStatus };
-    if (publishAt) {
-      status.publishAt = publishAt;
-    }
+    if (publishAt) status.publishAt = publishAt;
 
-    // insere o vídeo
-    const result = await youtube.videos.insert({
-      part: ['snippet','status'],
+    // 5. Faz upload (resumable por padrão)
+    const response = await youtube.videos.insert({
+      part: ['snippet', 'status'],
       requestBody: {
         snippet: { title, description, tags },
         status
       },
-      media: { body: fs.createReadStream(filePath) }
+      media: {
+        body: fs.createReadStream(filePath)   // pode ser grande (stream)
+      }
     });
+
+    const videoId = response.data.id;
 
     res.json({
       success: true,
-      id:     result.data.id,
-      url:    `https://youtu.be/${result.data.id}`
+      id:  videoId,
+      url: `https://youtu.be/${videoId}`
     });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err?.errors?.[0]?.message || err.message });
   }
 });
 
+// ────────── Inicializa servidor ───
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`YouTube-uploader listening on port ${PORT}`);
