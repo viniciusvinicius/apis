@@ -31,7 +31,9 @@ app.post('/upload', async (req, res) => {
       description = '',
       tags       = [],
       privacyStatus = 'private',
-      publishAt       // opcional
+      publishAt,           // optional
+      defaultLanguage,     // optional
+      defaultAudioLanguage // optional
     } = req.body;
 
     if (!filePath || !title) {
