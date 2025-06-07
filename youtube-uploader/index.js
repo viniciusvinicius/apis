@@ -2,7 +2,6 @@ require('dotenv').config();
 const express  = require('express');
 const fs       = require('fs');
 const { google } = require('googleapis');
-
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 
@@ -43,7 +42,6 @@ app.post('/upload', async (req, res) => {
     // 3. Cria cliente OAuth2 apenas com o access-token
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
-
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
     // 4. Monta status (inclui publishAt se veio)
@@ -56,7 +54,6 @@ app.post('/upload', async (req, res) => {
       description,
       tags
     };
-
     if (defaultLanguage) snippet.defaultLanguage = defaultLanguage;
     if (defaultAudioLanguage) snippet.defaultAudioLanguage = defaultAudioLanguage;
 
@@ -73,11 +70,10 @@ app.post('/upload', async (req, res) => {
     });
 
     const videoId = response.data.id;
-
     res.json({
       success: true,
       id:  videoId,
-      url: https://youtu.be/${videoId}
+      url: `https://youtu.be/${videoId}`  // ✅ CORRIGIDO: backticks adicionados
     });
 
   } catch (err) {
@@ -87,7 +83,7 @@ app.post('/upload', async (req, res) => {
 });
 
 // ────────── Inicializa servidor ───
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 1996;
 app.listen(PORT, () => {
-  console.log(YouTube-uploader listening on port ${PORT});
+  console.log(`YouTube-uploader listening on port ${PORT}`);  // ✅ CORRIGIDO: backticks adicionados
 });
