@@ -10,7 +10,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
 });
 
-// ────────── Upload de vídeo ───────
+// ────────── Upload de vídeo  ───────
 app.post('/upload', async (req, res) => {
   try {
     // 1. Extrai o access-token vindo do n8n
